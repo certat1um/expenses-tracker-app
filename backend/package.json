@@ -1,0 +1,52 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node ./dist/main.js",
+    "dev": "nodemon ./src/main.ts",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "prisma db seed",
+    "prisma:migrate-and-seed": "npm run prisma:migrate && npm run prisma:generate && npm run prisma:seed",
+    "prisma:reset": "prisma migrate reset --force --skip-seed",
+    "prisma:introspect": "npx prisma db pull"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "prisma": {
+    "seed": "ts-node prisma/seed/init.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "body-parser": "^1.20.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "nodemon": "^3.1.7",
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/dotenv": "^8.2.0",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.6.0",
+    "@typescript-eslint/parser": "^8.6.0",
+    "bcrypt": "^5.1.1",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "prettier": "^3.3.3",
+    "prettier-eslint": "^16.3.0",
+    "prisma": "^5.20.0",
+    "routing-controllers": "^0.10.4",
+    "ts-node-dev": "^2.0.0",
+    "typedi": "^0.10.0",
+    "typescript": "^5.6.2"
+  }
+}
