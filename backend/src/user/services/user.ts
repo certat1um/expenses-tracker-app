@@ -9,26 +9,20 @@ export class UserService {
   @Inject() private userRepository: UserRepository;
   @Inject() private authService: AuthService;
 
-  public async login(
-    data: Pick<IUser, 'email' | 'password'>,
-  ): Promise<{ token: string }> {
+  public async login(data: Pick<IUser, 'email' | 'password'>): Promise<{ token: string }> {
     const foundUser = await this.userRepository.findBy({ email: data.email });
     if (!foundUser) {
       throw new BadRequestError('Invalid user data.');
     }
 
     // check user password
-    const isSuccess = await this.authService.passCheck(
-      data.password,
-      foundUser.password,
-    );
+    const isSuccess = await this.authService.passCheck(data.password, foundUser.password);
     if (!isSuccess) {
       throw new UnauthorizedError('Invalid user password');
     }
 
     // generate user accessToken
     const token = this.authService.signJwt({ id: foundUser.id });
-
     return { token };
   }
 
@@ -47,7 +41,10 @@ export class UserService {
 
     // generate user accessToken
     const token = this.authService.signJwt({ id: createdUser.id });
-
     return { token };
+  }
+
+  public async updateByUser(id: string, data: Partial<IUser>): Promise<IUser> {
+    return this.userRepository.updateByUser(id, data);
   }
 }

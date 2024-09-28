@@ -10,7 +10,7 @@ import {
 } from 'routing-controllers';
 import { Inject, Service } from 'typedi';
 import { RecordService } from '../services/record';
-import { IRecord } from '../interfaces/record';
+import { IRecord, IRecordGroupsByCategories, IRecordRequestOptions } from '../interfaces/record';
 import { CreatePolicy } from '../policies/create.policy';
 import { UpdateByIdPolicy } from '../policies/updateById.policy';
 import { DeleteByIdPolicy } from '../policies/deleteById.policy';
@@ -23,6 +23,14 @@ export class RecordController {
   @Get('/get-by-user/:id')
   public async findByUser(@Param('id') userId: string): Promise<IRecord[]> {
     return this.recordService.findByUser(userId);
+  }
+
+  @Post('/get-by-month/:userId')
+  public async findByMonth(
+    @Param('userId') userId: string,
+    @Body() options: IRecordRequestOptions,
+  ): Promise<IRecordGroupsByCategories> {
+    return this.recordService.findByMonth(userId, options);
   }
 
   @Post('/create')

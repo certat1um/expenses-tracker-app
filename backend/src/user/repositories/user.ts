@@ -13,4 +13,8 @@ export class UserRepository {
   public async create(data: IUser): Promise<IUser> {
     return this.user.create({ data });
   }
+
+  public async updateByUser(id: string, data: Partial<IUser>): Promise<IUser> {
+    return this.user.update({ where: { id }, data });
+  }
 }

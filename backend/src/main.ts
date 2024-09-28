@@ -10,10 +10,10 @@ import { RecordController } from './record/controllers/record';
 import { JwtAuthMiddleware } from './_common/middlewares/global.jwt-auth';
 import bodyParser from 'body-parser';
 import { GlobalErrorHandlerMiddleware } from './_common/middlewares/global.error-handler';
+
 useContainer(Container);
 
 const app = express();
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
