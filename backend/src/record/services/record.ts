@@ -1,6 +1,6 @@
 import { Inject, Service } from 'typedi';
 import { RecordRepository } from '../repositories/record';
-import { IRecord, IRecordGroupsByCategories, IRecordRequestOptions } from '../interfaces/record';
+import { IRecord } from '../interfaces/record';
 import { NotFoundError } from 'routing-controllers';
 
 @Service()
@@ -17,13 +17,6 @@ export class RecordService {
 
   public async findByUser(userId: string): Promise<IRecord[]> {
     return this.recordRepository.findByUser(userId);
-  }
-
-  public async findByMonth(
-    userId: string,
-    options: IRecordRequestOptions,
-  ): Promise<IRecordGroupsByCategories> {
-    return this.recordRepository.findByMonth(userId, options);
   }
 
   public async create(data: IRecord): Promise<IRecord> {

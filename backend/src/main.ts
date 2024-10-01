@@ -10,6 +10,7 @@ import { RecordController } from './record/controllers/record';
 import { JwtAuthMiddleware } from './_common/middlewares/global.jwt-auth';
 import bodyParser from 'body-parser';
 import { GlobalErrorHandlerMiddleware } from './_common/middlewares/global.error-handler';
+import { StatisticsController } from './statistics/controllers/statistics';
 
 useContainer(Container);
 
@@ -19,7 +20,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 useExpressServer(app, {
   routePrefix: '/api',
-  controllers: [UserController, RecordController],
+  controllers: [UserController, RecordController, StatisticsController],
   middlewares: [GlobalErrorHandlerMiddleware, JwtAuthMiddleware],
   defaultErrorHandler: false,
 });
