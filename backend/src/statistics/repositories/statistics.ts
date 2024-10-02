@@ -3,7 +3,6 @@ import { prisma } from '../../../prisma/prisma';
 import {
   IStatisticsCategories,
   IStatisticsCategoriesByType,
-  IStatisticsCategoriesInfo,
   IStatisticsRecordsBySections,
   IStatisticsRecordsList,
   IStatisticsRequestOptions,
@@ -25,36 +24,38 @@ export class StatisticsRepository {
 
     const records = await this.record.findMany({
       where: {
-        ...options.filters,
+        type: options.filters.type,
         userId,
         createdAt: { gte: new Date(gte), lte: new Date(lte) },
       },
     });
 
-    return options.filters?.type
-      ? this.groupByCategories(records, options.filters.type)
-      : this.groupByCategoriesAndTypes(records);
+    return this.groupByCategories(records);
   }
 
   public async recordsList(
     userId: string,
     options: IStatisticsRequestOptions,
   ): Promise<IStatisticsRecordsList> {
-    const { filters } = options;
+    const { filters, pagination, sort } = options;
+
     const records = await this.record.findMany({
       where: {
-        ...options.filters,
+        ...filters,
         userId,
         ...(filters.createdAt && {
           createdAt: { gte: new Date(filters.createdAt.gte), lte: new Date(filters.createdAt.lte) },
         }),
       },
+      skip: (pagination?.cur_page - 1) * pagination?.page_size,
+      take: pagination?.page_size,
+      orderBy: sort,
     });
 
     return this.groupByDay(records);
   }
 
-  public async recordsDividedBySections(
+  public async recordsBySections(
     userId: string,
     options: IStatisticsRequestOptions,
   ): Promise<IStatisticsRecordsBySections[]> {
@@ -68,7 +69,6 @@ export class StatisticsRepository {
     });
 
     const groupedByDays = await this.groupByDay(records);
-
     return this.divideInSections(groupedByDays);
   }
 
@@ -87,19 +87,17 @@ export class StatisticsRepository {
           from: date,
           to: date,
           sum: 0,
-          records: [],
+          recordsCount: 0,
         };
       } else {
         sectors[sectorIndex].to = date;
       }
 
-      sectors[sectorIndex].records.push(...records[date]);
-    });
+      sectors[sectorIndex].sum += records[date]
+        .map((r) => Number(r.value))
+        .reduce((acc, next) => acc + next, 0);
 
-    sectors.forEach((s) => {
-      s.sum = s.records
-        .map((r: IRecord) => Number(r.value))
-        .reduce((acc: number, next: number) => acc + next, 0);
+      sectors[sectorIndex].recordsCount += records[date].length;
     });
 
     return sectors;
@@ -124,10 +122,7 @@ export class StatisticsRepository {
     return groupedRecordsByDays;
   }
 
-  private async groupByCategories(
-    records: IRecord[],
-    type: IRecord['type'],
-  ): Promise<IStatisticsCategoriesByType> {
+  private async groupByCategories(records: IRecord[]): Promise<IStatisticsCategoriesByType> {
     const uniqueCategoryIds = [...new Set(records.map((r) => r.categoryId))];
     const categories = await this.categoryRepository.findByIds(uniqueCategoryIds);
     const groupedRecords = {
@@ -137,62 +132,16 @@ export class StatisticsRepository {
 
     categories.forEach((c) => {
       const recordsByCategory = records.filter((r) => r.categoryId === c.id);
-      const filteredRecords = recordsByCategory.filter((r) => r.type === type);
 
-      if (filteredRecords.length) {
-        let totalCategoryAmount = 0;
-        filteredRecords.forEach((r) => (totalCategoryAmount += Number(r.value)));
+      const totalCategoryAmount = recordsByCategory
+        .map((r) => Number(r.value))
+        .reduce((acc, next) => acc + next, 0);
 
-        groupedRecords.totalAmount += totalCategoryAmount;
-        groupedRecords.categories.push({
-          categoryId: c.id,
-          categoryName: c.name,
-          totalAmount: totalCategoryAmount,
-        });
-      }
-    });
-
-    return groupedRecords;
-  }
-
-  private async groupByCategoriesAndTypes(records: IRecord[]): Promise<IStatisticsCategoriesInfo> {
-    const uniqueCategoryIds = [...new Set(records.map((r) => r.categoryId))];
-    const categories = await this.categoryRepository.findByIds(uniqueCategoryIds);
-    const groupedRecords = {
-      incomes: {
-        totalAmount: 0,
-        categories: [],
-      },
-      expenses: {
-        totalAmount: 0,
-        categories: [],
-      },
-    } as IStatisticsCategoriesInfo;
-
-    categories.forEach((c) => {
-      const recordsByCategory = records.filter((r) => r.categoryId === c.id);
-
-      ['income', 'expense'].forEach((type) => {
-        const filteredRecords = recordsByCategory.filter((r) => r.type === type);
-
-        if (filteredRecords.length) {
-          let totalCategoryAmount = 0;
-          filteredRecords.forEach((r) => {
-            totalCategoryAmount += Number(r.value);
-
-            if (type === 'income') {
-              groupedRecords.incomes.totalAmount += Number(r.value);
-            } else if (type === 'expense') {
-              groupedRecords.expenses.totalAmount += Number(r.value);
-            }
-          });
-
-          groupedRecords[`${type}s`].categories.push({
-            categoryId: c.id,
-            categoryName: c.name,
-            totalAmount: totalCategoryAmount,
-          });
-        }
+      groupedRecords.totalAmount += totalCategoryAmount;
+      groupedRecords.categories.push({
+        categoryId: c.id,
+        categoryName: c.name,
+        totalAmount: totalCategoryAmount,
       });
     });
 

@@ -2,13 +2,8 @@ import { IRecord } from '../../record/interfaces/record';
 
 export interface IStatisticsRequestOptions {
   filters?: { [key: string]: any };
-  // sort?: { [key: string]: any };
-  // pagination?: { [key: string]: any };
-}
-
-export interface IStatisticsCategoriesInfo {
-  incomes: IStatisticsCategoriesByType;
-  expenses: IStatisticsCategoriesByType;
+  sort?: { [key: string]: any };
+  pagination?: { cur_page: number; page_size: number };
 }
 
 export interface IStatisticsCategoriesByType {
@@ -28,9 +23,9 @@ export interface IStatisticsRecordsList {
 
 export interface IStatisticsRecordsBySections {
   from: string;
-  sum: number;
   to: string;
-  records: IRecord[];
+  sum: number;
+  recordsCount: number;
 }
 
-export type IStatisticsCategories = IStatisticsCategoriesInfo | IStatisticsCategoriesByType;
+export type IStatisticsCategories = IStatisticsCategoriesByType;

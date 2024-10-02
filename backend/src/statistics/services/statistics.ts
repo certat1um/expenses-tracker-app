@@ -25,10 +25,10 @@ export class StatisticsService {
     return this.statisticsRepository.recordsList(userId, options);
   }
 
-  public async recordsDividedBySections(
+  public async recordsBySections(
     userId: string,
     options: IStatisticsRequestOptions,
   ): Promise<IStatisticsRecordsBySections[]> {
-    return this.statisticsRepository.recordsDividedBySections(userId, options);
+    return this.statisticsRepository.recordsBySections(userId, options);
   }
 }

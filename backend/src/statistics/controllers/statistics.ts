@@ -33,11 +33,11 @@ export class StatisticsController {
   }
 
   @Post('/records-by-sections')
-  public async recordsDividedBySections(
+  public async recordsBySections(
     @Req() req: ExtendedRequest,
     @Body() options: IStatisticsRequestOptions,
   ): Promise<IStatisticsRecordsBySections[]> {
     const userId = req.user.id;
-    return this.statisticsService.recordsDividedBySections(userId, options);
+    return this.statisticsService.recordsBySections(userId, options);
   }
 }
