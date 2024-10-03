@@ -1,9 +1,9 @@
 import { Inject, Service } from 'typedi';
 import { prisma } from '../../../prisma/prisma';
 import {
-  IStatisticsCategories,
-  IStatisticsCategoriesByType,
-  IStatisticsRecordsBySections,
+  IStatisticsCategoriesInfo,
+  IStatisticsLinearDiagram,
+  IStatisticsRecordsInSections,
   IStatisticsRecordsList,
   IStatisticsRequestOptions,
 } from '../interfaces/statistics';
@@ -16,15 +16,14 @@ export class StatisticsRepository {
 
   private record = prisma.record;
 
-  public async categoriesInfo(
+  public async radialDiagram(
     userId: string,
     options: IStatisticsRequestOptions,
-  ): Promise<IStatisticsCategories> {
+  ): Promise<IStatisticsCategoriesInfo> {
     const { gte, lte } = options.filters.createdAt;
-
     const records = await this.record.findMany({
       where: {
-        type: options.filters.type,
+        ...options.filters,
         userId,
         createdAt: { gte: new Date(gte), lte: new Date(lte) },
       },
@@ -38,14 +37,13 @@ export class StatisticsRepository {
     options: IStatisticsRequestOptions,
   ): Promise<IStatisticsRecordsList> {
     const { filters, pagination, sort } = options;
+    const { gte, lte } = filters.createdAt;
 
     const records = await this.record.findMany({
       where: {
-        ...filters,
+        categoryId: filters?.categoryId,
         userId,
-        ...(filters.createdAt && {
-          createdAt: { gte: new Date(filters.createdAt.gte), lte: new Date(filters.createdAt.lte) },
-        }),
+        createdAt: { gte: new Date(gte), lte: new Date(lte) },
       },
       skip: (pagination?.cur_page - 1) * pagination?.page_size,
       take: pagination?.page_size,
@@ -55,10 +53,10 @@ export class StatisticsRepository {
     return this.groupByDay(records);
   }
 
-  public async recordsBySections(
+  public async linearDiagram(
     userId: string,
     options: IStatisticsRequestOptions,
-  ): Promise<IStatisticsRecordsBySections[]> {
+  ): Promise<IStatisticsLinearDiagram> {
     const { gte, lte } = options.filters.createdAt;
     const records = await this.record.findMany({
       where: {
@@ -68,71 +66,29 @@ export class StatisticsRepository {
       },
     });
 
-    const groupedByDays = await this.groupByDay(records);
-    return this.divideInSections(groupedByDays);
+    const groupedByDays = this.groupByDay(records);
+    const recordsInSections = await this.divideInSections(groupedByDays);
+    const totalAmount = recordsInSections.map((r) => r.sum).reduce((acc, next) => acc + next, 0);
+    const averageAmount = totalAmount / recordsInSections.length;
+
+    return {
+      totalAmount,
+      averageAmount,
+      prevMonthDiff: 0,
+      recordsInSections,
+    };
   }
 
-  private async divideInSections(
-    records: IStatisticsRecordsList,
-    sectorCount = 6,
-  ): Promise<IStatisticsRecordsBySections[]> {
-    const dates = Object.keys(records);
-    const sectors = [];
-
-    dates.forEach((date, index) => {
-      const sectorIndex = index % sectorCount;
-
-      if (!sectors[sectorIndex]) {
-        sectors[sectorIndex] = {
-          from: date,
-          to: date,
-          sum: 0,
-          recordsCount: 0,
-        };
-      } else {
-        sectors[sectorIndex].to = date;
-      }
-
-      sectors[sectorIndex].sum += records[date]
-        .map((r) => Number(r.value))
-        .reduce((acc, next) => acc + next, 0);
-
-      sectors[sectorIndex].recordsCount += records[date].length;
-    });
-
-    return sectors;
-  }
-
-  private async groupByDay(records: IRecord[]): Promise<IStatisticsRecordsList> {
-    const filteredDates = [
-      ...new Set(records.map((r) => new Date(r.createdAt).toISOString().slice(0, 10))),
-    ];
-    const groupedRecordsByDays = {};
-
-    filteredDates.forEach((date) => {
-      records.forEach((r) => {
-        if (new Date(r.createdAt).toISOString().slice(0, 10) === date) {
-          if (!Array.isArray(groupedRecordsByDays[date])) {
-            groupedRecordsByDays[date] = [];
-          }
-          groupedRecordsByDays[date].push(r);
-        }
-      });
-    });
-    return groupedRecordsByDays;
-  }
-
-  private async groupByCategories(records: IRecord[]): Promise<IStatisticsCategoriesByType> {
+  private async groupByCategories(records: IRecord[]): Promise<IStatisticsCategoriesInfo> {
     const uniqueCategoryIds = [...new Set(records.map((r) => r.categoryId))];
     const categories = await this.categoryRepository.findByIds(uniqueCategoryIds);
     const groupedRecords = {
       totalAmount: 0,
       categories: [],
-    } as IStatisticsCategoriesByType;
+    } as IStatisticsCategoriesInfo;
 
     categories.forEach((c) => {
       const recordsByCategory = records.filter((r) => r.categoryId === c.id);
-
       const totalCategoryAmount = recordsByCategory
         .map((r) => Number(r.value))
         .reduce((acc, next) => acc + next, 0);
@@ -141,10 +97,55 @@ export class StatisticsRepository {
       groupedRecords.categories.push({
         categoryId: c.id,
         categoryName: c.name,
+        categoryPercentage: 0,
+        recordsCount: recordsByCategory.length,
         totalAmount: totalCategoryAmount,
       });
     });
 
     return groupedRecords;
+  }
+
+  private async divideInSections(
+    records: IStatisticsRecordsList,
+    sectorsAmount = 6,
+  ): Promise<IStatisticsRecordsInSections[]> {
+    const dates = Object.keys(records);
+    const sectors = [];
+
+    dates.forEach((date, index) => {
+      const sectorIndex = index % sectorsAmount;
+
+      if (!sectors[sectorIndex]) {
+        sectors[sectorIndex] = {
+          from: date,
+          to: date,
+          sum: 0,
+        };
+      } else {
+        sectors[sectorIndex].to = date;
+      }
+
+      sectors[sectorIndex].sum += records[date]
+        .map((r) => Number(r.value))
+        .reduce((acc, next) => acc + next, 0);
+    });
+
+    return sectors;
+  }
+
+  private groupByDay(records: IRecord[]): IStatisticsRecordsList {
+    const recordsByDays = {};
+
+    records.forEach((r) => {
+      const dateRange = new Date(r.createdAt).toISOString().slice(0, 10);
+      if (!Array.isArray(recordsByDays[dateRange])) {
+        recordsByDays[dateRange] = [];
+      }
+
+      recordsByDays[dateRange].push(r);
+    });
+
+    return recordsByDays;
   }
 }

@@ -6,7 +6,7 @@ export interface IStatisticsRequestOptions {
   pagination?: { cur_page: number; page_size: number };
 }
 
-export interface IStatisticsCategoriesByType {
+export interface IStatisticsCategoriesInfo {
   totalAmount: number;
   categories: IStatisticsCategoryGroup[];
 }
@@ -14,18 +14,24 @@ export interface IStatisticsCategoriesByType {
 export interface IStatisticsCategoryGroup {
   categoryId: string;
   categoryName: string;
+  categoryPercentage: number;
   totalAmount: number;
+  recordsCount: number;
 }
 
 export interface IStatisticsRecordsList {
   [key: string]: IRecord[];
 }
 
-export interface IStatisticsRecordsBySections {
+export interface IStatisticsLinearDiagram {
+  totalAmount: number;
+  averageAmount: number;
+  prevMonthDiff: number;
+  recordsInSections: IStatisticsRecordsInSections[];
+}
+
+export interface IStatisticsRecordsInSections {
   from: string;
   to: string;
   sum: number;
-  recordsCount: number;
 }
-
-export type IStatisticsCategories = IStatisticsCategoriesByType;

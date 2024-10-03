@@ -1,8 +1,8 @@
 import { Body, JsonController, Post, Req } from 'routing-controllers';
 import { Inject, Service } from 'typedi';
 import {
-  IStatisticsCategories,
-  IStatisticsRecordsBySections,
+  IStatisticsCategoriesInfo,
+  IStatisticsLinearDiagram,
   IStatisticsRecordsList,
   IStatisticsRequestOptions,
 } from '../interfaces/statistics';
@@ -14,13 +14,9 @@ import { StatisticsService } from '../services/statistics';
 export class StatisticsController {
   @Inject() private statisticsService: StatisticsService;
 
-  @Post('/categories-info')
-  public async categoriesInfo(
-    @Req() req: ExtendedRequest,
-    @Body() options: IStatisticsRequestOptions,
-  ): Promise<IStatisticsCategories> {
-    const userId = req.user.id;
-    return this.statisticsService.categoriesInfo(userId, options);
+  @Post('/radial-diagram')
+  public async categoriesInfo(@Body() options: any): Promise<IStatisticsCategoriesInfo> {
+    return this.statisticsService.radialDiagram(options.userId, options);
   }
 
   @Post('/records-list')
@@ -32,12 +28,12 @@ export class StatisticsController {
     return this.statisticsService.recordsList(userId, options);
   }
 
-  @Post('/records-by-sections')
+  @Post('/linear-diagram')
   public async recordsBySections(
     @Req() req: ExtendedRequest,
     @Body() options: IStatisticsRequestOptions,
-  ): Promise<IStatisticsRecordsBySections[]> {
+  ): Promise<IStatisticsLinearDiagram> {
     const userId = req.user.id;
-    return this.statisticsService.recordsBySections(userId, options);
+    return this.statisticsService.linearDiagram(userId, options);
   }
 }

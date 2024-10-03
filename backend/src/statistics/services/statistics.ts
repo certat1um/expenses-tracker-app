@@ -1,7 +1,7 @@
 import { Inject, Service } from 'typedi';
 import {
-  IStatisticsCategories,
-  IStatisticsRecordsBySections,
+  IStatisticsCategoriesInfo,
+  IStatisticsLinearDiagram,
   IStatisticsRecordsList,
   IStatisticsRequestOptions,
 } from '../interfaces/statistics';
@@ -11,11 +11,11 @@ import { StatisticsRepository } from '../repositories/statistics';
 export class StatisticsService {
   @Inject() private statisticsRepository: StatisticsRepository;
 
-  public async categoriesInfo(
+  public async radialDiagram(
     userId: string,
     options: IStatisticsRequestOptions,
-  ): Promise<IStatisticsCategories> {
-    return this.statisticsRepository.categoriesInfo(userId, options);
+  ): Promise<IStatisticsCategoriesInfo> {
+    return this.statisticsRepository.radialDiagram(userId, options);
   }
 
   public async recordsList(
@@ -25,10 +25,10 @@ export class StatisticsService {
     return this.statisticsRepository.recordsList(userId, options);
   }
 
-  public async recordsBySections(
+  public async linearDiagram(
     userId: string,
     options: IStatisticsRequestOptions,
-  ): Promise<IStatisticsRecordsBySections[]> {
-    return this.statisticsRepository.recordsBySections(userId, options);
+  ): Promise<IStatisticsLinearDiagram> {
+    return this.statisticsRepository.linearDiagram(userId, options);
   }
 }
